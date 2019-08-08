@@ -48,17 +48,14 @@ object RetrieveData extends App {
       df
     } else spark.read.option("multiline", "true").json(path)
 
-
-
-//  val data = readWriteJson(path, spark)
-//  data.select("changes").show(10)
-//  data.schema.printTreeString()
-  val parquetPath = "s3a://seamfix-machine-learning-ir/BioregistraParquet/hubsport/campaigns/"
+  val parquetPath = "s3a://seamfix-machine-learning-ir/BioregistraParquet/hubsport/owners/"
 
   val tranformer = new TransformHubspot(spark)
   val data = tranformer.readParquet(parquetPath)
   data.schema.printTreeString()
-  val exploded = tranformer.explodeCampaigns(data)
+
+  val exploded = tranformer.explodeOwners(data)
+
   exploded.printSchema()
 
   exploded.show(10)

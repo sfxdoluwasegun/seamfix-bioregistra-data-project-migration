@@ -1,6 +1,6 @@
 package com.seamfix.bioregistraetl
 
-import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.apache.spark.sql.{Column, DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 
 class TransformHubspot(sparkSession: SparkSession) extends TransformData {
@@ -13,25 +13,53 @@ class TransformHubspot(sparkSession: SparkSession) extends TransformData {
     */
   def readParquet(path: String): DataFrame = sparkSession.read.parquet(path)
 
-  private def explodeChangeColumn(columnName: String = "changes", dataFrame: DataFrame) = {
-    val columnList = List("changes", "causedByEvent")
+  private val renameCol = (c: Column) => c.alias(c.toString.replace(".", "_"))
+
+  private val extractOtherArray: DataFrame => DataFrame = (c: DataFrame) => {
+    var dataFrame = c
+    extractArrayCol(dataFrame.schema).foreach(column =>
+      dataFrame = dataFrame.withColumn(column + "_value", explode(col(column))).drop(column)
+    )
     dataFrame
-      .alias("changeColumns")
-      .withColumn("exploded", explode(col(columnName)))
-      .select("changeColumns.*", "exploded.*")
-      .alias("firstExploded")
-      .select("firstExploded.*",
-              "firstExploded.causedByEvent.created",
-              "firstExploded.causedByEvent.id")
-      .withColumnRenamed("created", "event_created_time")
-      .withColumnRenamed("id", "event_id")
-      .drop(columnList: _*)
   }
 
   def explodeCampaigns(dataFrame: DataFrame): DataFrame = {
-    dataFrame.select(flattenSchema(dataFrame.schema):_*)
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
   }
 
   def explodeChanges(dataFrame: DataFrame): DataFrame =
-    transform(dataFrame, explodeChangeColumn, "changes")
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeCompanies(dataFrame: DataFrame): DataFrame =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeContacts(dataFrame: DataFrame): DataFrame = {
+    val schemas = flattenSchema(dataFrame.schema).toSet.diff(
+      Set("identity-profiles.identities.timestamp",
+          "identity-profiles.identities.type",
+          "identity-profiles.identities.value").map(name => col(name)))
+    dataFrame.select(schemas.toSeq.map(renameCol): _*)
+  }
+
+  def explodeContactsList(dataFrame: DataFrame): DataFrame =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeDealPipelines(dataFrame: DataFrame): DataFrame =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeDeals(dataFrame: DataFrame): DataFrame =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeEmailEvents(dataFrame: DataFrame): DataFrame =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+  def explodeEngagements(dataFrame: DataFrame) =
+      extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+
+  def explodeOwners(dataFrame: DataFrame) =
+    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+
+
+
 }
