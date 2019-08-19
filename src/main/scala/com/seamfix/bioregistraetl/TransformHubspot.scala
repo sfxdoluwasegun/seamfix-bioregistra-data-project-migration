@@ -13,7 +13,7 @@ class TransformHubspot(sparkSession: SparkSession) extends TransformData {
     */
   def readParquet(path: String): DataFrame = sparkSession.read.parquet(path)
 
-  private val renameCol = (c: Column) => c.alias(c.toString.replace(".", "_"))
+  private val renameCol = (c: Column) => c.alias(c.toString.replace(".", "__"))
 
   private val extractOtherArray: DataFrame => DataFrame = (c: DataFrame) => {
     var dataFrame = c
@@ -41,8 +41,11 @@ class TransformHubspot(sparkSession: SparkSession) extends TransformData {
     dataFrame.select(schemas.toSeq.map(renameCol): _*)
   }
 
+  def explodeAll(dataFrame: DataFrame): DataFrame =
+   dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*)
+
   def explodeContactsList(dataFrame: DataFrame): DataFrame =
-    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+   dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*).drop("filters")
 
   def explodeDealPipelines(dataFrame: DataFrame): DataFrame =
     extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
@@ -51,10 +54,10 @@ class TransformHubspot(sparkSession: SparkSession) extends TransformData {
     extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
 
   def explodeEmailEvents(dataFrame: DataFrame): DataFrame =
-    extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+    dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*)
 
   def explodeEngagements(dataFrame: DataFrame) =
-      extractOtherArray(dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*))
+      dataFrame.select(flattenSchema(dataFrame.schema).map(renameCol): _*)
 
 
   def explodeOwners(dataFrame: DataFrame) =
