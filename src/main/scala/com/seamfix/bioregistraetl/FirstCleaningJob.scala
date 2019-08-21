@@ -4,47 +4,48 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
 
 /**
-  * 
+  *
   * The idea is to look at the tables available and write a spark script to generate a clean table for visualization
   * Hence you will load multiple dataframes depending on the table you find useful
   * Clean the dataframe and make your final visualization.
   */
-
-
 class FirstCleaningJob(spark: SparkSession) {
   //TODO: This should go into the configuration file
-  private val PROJECT_PATH = "s3a://seamfix-machine-learning-ir/BioregistraParquet/bioregistra_db_parquet/projects/"
-
-
+  private val PROJECT_PATH =
+    "s3a://seamfix-machine-learning-ir/BioregistraParquet/bioregistra_db_parquet/projects/"
+  private val SUBSCRIPTION_HISTORY =
+    "s3a://seamfix-machine-learning-ir/BioregistraParquet/bioregistra_db_parquet/subscription_payment_history/"
 
   //Read a DataFrame and give it the name of the path
-  def readDf(path:String) = spark.read.parquet(path)
-  private lazy val expression: DataFrame => Map[String, String] = (df: DataFrame) => df.columns.map(_ -> "approx_count_distinct").toMap
+  def readDf(path: String) = spark.read.parquet(path)
+  private lazy val expression: DataFrame => Map[String, String] = (df: DataFrame) =>
+    df.columns.map(_ -> "approx_count_distinct").toMap
 
-  def selectColumns(df: DataFrame, columns:Seq[String]) = {
+  def selectColumns(df: DataFrame, columns: Seq[String]) = {
     val toSelectColumns = columns.map(x => col(x))
-    df.select(toSelectColumns:_*)
+    df.select(toSelectColumns: _*)
   }
 
-
   //Read Project table
-  val projectDf = readDf(PROJECT_PATH)
+  lazy val projectDf      = readDf(PROJECT_PATH)
+  lazy val paymentHistory = readDf(SUBSCRIPTION_HISTORY)
 
   //1.: Get Count of of total category
-  val dfToCheckDistinct = selectColumns(projectDf, Seq("category"))
-  val callGetDistinctCategories = dfToCheckDistinct.agg(expression(dfToCheckDistinct))
-  /**
-  * //Shows we have 12 Categories of industries in the project so far
-  |approx_count_distinct(category)|
-    +-------------------------------+
-  |                             12|
-  +-------------------------------+
-    */
+  lazy val dfToCheckDistinct         = selectColumns(projectDf, Seq("category"))
+  lazy val callGetDistinctCategories = dfToCheckDistinct.agg(expression(dfToCheckDistinct))
 
-  //Get count per categories
-  val categories = dfToCheckDistinct.groupBy("category").count()
   /**
-  * +--------------------+-----+
+    * //Shows we have 12 Categories of industries in the project so far
+    *|approx_count_distinct(category)|
+    *+-------------------------------+
+    *|                             12|
+    *+-------------------------------+
+    */
+  //Get count per categories
+  lazy val categories = dfToCheckDistinct.groupBy("category")
+
+  /**
+    * +--------------------+-----+
     * |            category|count|
     * +--------------------+-----+
     * |              OTHERS|  405|
@@ -64,7 +65,16 @@ class FirstCleaningJob(spark: SparkSession) {
     *
     * Companies can host multiple project and even in different categories
     */
+  //Get company company that subscribed multiple time and their project sector
+  //Project has a start date, orgId
 
-  //Get company by project.
+  lazy val payingOrganizations = paymentHistory
+    .groupBy(col("orgId"), col("subscriptionplanid"))
+    .agg(count(col("subscriptionplanid")).alias("countSubscriptionPlan"))
+
+
+
+  //
+
 
 }
