@@ -124,3 +124,7 @@ FROM organizations limit 50
 	select  (cast ((a.num - b.num) as DOUBLE)/ cast(a.num  as DOUBLE )) as n, 'Churn Rate'
     from ((select * from visualization_db.churn_kpi
 
+CREATE or replace view visualization_db.org_status as
+select orgid, subscriptionstatus, min(sign_up_date) as sign_up_date, 
+min(subscription_date) as trial_date, max(subscription_end_date) as last_date from visualization_db.org_sub
+group by orgid, subscriptionstatus
