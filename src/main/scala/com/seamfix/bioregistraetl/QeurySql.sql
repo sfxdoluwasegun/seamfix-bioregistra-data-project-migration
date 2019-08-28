@@ -41,29 +41,29 @@ select *, date_diff('day', signed_up, first_project) as days_first_project
 from project_date
 
 
-
-CREATE or replace view visualization_db.org_sub AS
-SELECT DISTINCT o.name,
-         o."createdby" email,
-         u."planname", o.subscriptiontype,
-         from_unixtime((o."created"/1000)) AS sign_up_date,
-         from_unixtime((cast(s."startdate" AS BIGINT)/1000)) subcription_date,
-         s.amountpaid,
-         s.orgid,
-         s.active,
-         s.status,
-         s.subscriptioncycle,
-         s.paymentmode,
-         s.transactionref
-         --c.count captured_records
-FROM organizations o
-LEFT JOIN subscription_history s
-    ON o."orgid" = s."orgid"
-LEFT JOIN user_billing_band u
-    ON s."subscriptionplan" = u._id
- ---left JOIN count_cr__ c ON c."orgid" = o."orgid"
- ---where date(from_unixtime((o."created"/1000))) >= '2019-01-01'
- ---where lower(u."planname") is NOT null;
+CREATE OR REPLACE VIEW visualization_db.org_sub AS
+SELECT DISTINCT
+  "o"."name"
+, "o"."orgid" "organization_id"
+, "o"."createdby" "email"
+, "u"."planname"
+, "o"."subscriptiontype"
+, "o"."orgtype" "organization_type"
+, "o"."subscriptionstatus"
+, "from_unixtime"(("o"."created" / 1000)) "sign_up_date"
+, "from_unixtime"((CAST("s"."startdate" AS bigint) / 1000)) "subscription_date"
+, "from_unixtime"((CAST("s"."enddate" AS bigint) / 1000)) "subscription_end_date"
+, "s"."amountpaid"
+, "s"."orgid"
+, "s"."active"
+, "s"."status"
+, "s"."subscriptioncycle"
+, "s"."paymentmode"
+, "s"."transactionref"
+FROM
+  ((app_db_p.organizations o
+LEFT JOIN app_db_p.subscription_history s ON ("o"."orgid" = "s"."orgid"))
+LEFT JOIN app_db_p.user_billing_band u ON ("s"."subscriptionplan" = "u"."_id"))
 
 
 CREATE view visualization_db.project_view AS
@@ -120,7 +120,67 @@ FROM organizations limit 50
 	AND orgid in (select orgid from app_db_p.subscription_history group by orgid having  count (orgid) > 1)
 
 
-	Churn Since Inception
+----Churn Since Inception
 	select  (cast ((a.num - b.num) as DOUBLE)/ cast(a.num  as DOUBLE )) as n, 'Churn Rate'
     from ((select * from visualization_db.churn_kpi
+	where kpi = 'TOTAL SIGNUPS') a cross join (select * from  visualization_db.churn_kpi
+	where kpi = 'CONVERTED') b);
 
+
+
+
+
+create view visualization_db.customer_journey_count as
+	select count(*) as num, 'TOTAL SIGNUPS' as kpi
+	from visualization_db.project_date where  format_datetime (signed_up, 'y') = '2019'
+	UNION
+	select count(*) , 'CREATED PROJECTS' from visualization_db.project_date
+	WHERE PROJECTS_DONE > 0 and format_datetime (signed_up, 'y') = '2019'
+	UNION
+	select count(*) , 'CONVERTED' from visualization_db.project_date vp
+WHERE PROJECTS_DONE > 0 AND format_datetime (signed_up, 'y') = '2019'
+AND orgid in (select orgid from app_db_p.subscription_history group by orgid having count (orgid) > 1)
+UNION
+select count(*), 'RENEWED SUBSCRIPTION' from visualization_db.project_date vp
+WHERE PROJECTS_DONE > 0 AND format_datetime (signed_up, 'y') = '2019'
+AND orgid in (select orgid from app_db_p.subscription_history group by orgid having  count (orgid) > 2)
+UNION
+select COUNT(DISTINCT orgid), 'CURRENTLY ACTIVE'from app_db_p.subscription_history where status != 'EXPIRED'
+
+
+CREATE OR REPLACE VIEW "project_date" AS
+select * from project_per_org_view
+union all
+(select o.orgid, null as projects_done, null as first_project,
+max(sign_up_date), max(sign_up_date), name from org_sub o
+where o.orgid not in (select orgid from project_per_org_view)
+group by o.orgid, o.name);
+
+
+CREATE OR REPLACE VIEW "project_per_org_view" AS
+select p.orgid, count(distinct p.pid) as projects_done, min(p.created) as first_project,
+max(o.sign_up_date) as signed_up,min(o.sign_up_date) as signed_up_2, o.name
+from org_sub o join project_view p
+on o.orgid = p.orgid
+group by p.orgid, o.name
+order by 3 asc;
+
+
+CREATE OR REPLACE VIEW "subscription_plan" AS
+select orgId, subscriptionplanid, count(subscriptionplanid) as countSubscriptionPlan from app_db_p.subscription_payment_history
+group by orgId, subscriptionplanid order by countSubscriptionPlan desc
+
+
+
+CREATE OR REPLACE VIEW churn_table AS
+SELECT
+  b.*
+, (CASE WHEN ("week_spent" > 2) THEN 'not churn' ELSE 'churn' END) "churn_status"
+FROM
+  (
+   SELECT
+     a.*
+   , "date_diff"('week', "a"."trial_date", "a"."last_date") "week_spent"
+   FROM
+     visualization_db.org_status a
+)  b

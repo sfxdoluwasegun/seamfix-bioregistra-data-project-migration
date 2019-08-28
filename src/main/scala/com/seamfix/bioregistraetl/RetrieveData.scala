@@ -34,10 +34,14 @@ object RetrieveData extends App {
 
   //Working on the DataFrame:
   val firstCleaningJob = new FirstCleaningJob(spark)
-  firstCleaningJob.callGetDistinctCategories.show(10)
-  val categoryCount = firstCleaningJob.categories
-  //Write
-  writeVisualizationParquet(categoryCount, "projects_group", spark)
+//  firstCleaningJob.callGetDistinctCategories.show(10)
+//  val categoryCount = firstCleaningJob.categories
+//  //Write
+//  //writeVisualizationParquet(categoryCount, "projects_group", spark)
+//
+//  //Payments Group
+  val paymentGroups = firstCleaningJob.payingOrganizations
+  writeVisualizationParquet(paymentGroups, "subscription_plans", spark)
 
 
 
