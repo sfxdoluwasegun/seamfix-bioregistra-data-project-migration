@@ -184,3 +184,54 @@ FROM
    FROM
      visualization_db.org_status a
 )  b
+
+-- Churn table
+CREATE TABLE parquet_churn_table WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/churntable'
+    ) AS SELECT * FROM visualization_db.churn_table
+
+
+-- Org Sub
+CREATE TABLE parquet_org_sub WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/orgSub'
+    ) AS SELECT * FROM visualization_db.org_sub
+
+-- Org status
+CREATE TABLE parquet_org_status WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/orgStatus'
+    ) AS SELECT * FROM visualization_db.org_status
+
+-- Project Date
+CREATE TABLE parquet_project_date WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/projectDate'
+    ) AS SELECT * FROM visualization_db.project_date
+
+-- Project Per OrgView
+CREATE TABLE parquet_project_per_org_view WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/projectOrgView'
+    ) AS SELECT * FROM visualization_db.project_per_org_view
+
+
+ -- Project Per OrgView
+CREATE TABLE parquet_project_view WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/projectView'
+    ) AS SELECT * FROM visualization_db.project_view
+
+ -- Subscription Plan
+CREATE TABLE parquet_subscription_plan WITH (
+          format = 'PARQUET',
+          parquet_compression = 'SNAPPY',
+          external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/subscriptionPlan'
+    ) AS SELECT * FROM visualization_db.subscription_plan
