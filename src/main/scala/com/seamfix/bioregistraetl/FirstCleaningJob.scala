@@ -2,6 +2,7 @@ package com.seamfix.bioregistraetl
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.apache.spark.sql.functions._
+import org.apache.spark.sql.types.{ArrayType, DataType, StructType}
 
 /**
   *
@@ -21,9 +22,9 @@ class FirstCleaningJob(spark: SparkSession) {
   private lazy val expression: DataFrame => Map[String, String] = (df: DataFrame) =>
     df.columns.map(_ -> "approx_count_distinct").toMap
 
-  def selectColumns(df: DataFrame, columns: Seq[String]) = {
+  def selectColumns(df: DataFrame, columns: Seq[String]): DataFrame = {
     val toSelectColumns = columns.map(x => col(x))
-    df.select(toSelectColumns: _*)
+   df.select(toSelectColumns: _*)
   }
 
   //Read Project table
@@ -71,10 +72,6 @@ class FirstCleaningJob(spark: SparkSession) {
   lazy val payingOrganizations = paymentHistory
     .groupBy(col("orgId"), col("subscriptionplanid"))
     .agg(count(col("subscriptionplanid")).alias("countSubscriptionPlan"))
-
-
-
-  //
 
 
 }

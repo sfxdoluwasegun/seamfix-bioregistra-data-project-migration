@@ -235,3 +235,52 @@ CREATE TABLE parquet_subscription_plan WITH (
           parquet_compression = 'SNAPPY',
           external_location = 's3://seamfix-machine-learning-ir/BioregistraParquet/subscriptionPlan'
     ) AS SELECT * FROM visualization_db.subscription_plan
+
+
+
+    --- Updates on Visuaization
+    -- Note: Unless you save your query, these tabs will NOT persist if you clear your cookies or change browsers.
+
+SELECT * FROM app_db_p.sign_up_parquet;
+
+
+SELECT * FROM app_db_p.sign_up_parquet
+WHERE customer_feedback IS NOT NULL
+
+
+--Total feedbacks received
+
+SELECT DISTINCT reason_for_signup FROM app_db_p.sign_up_parquet
+
+SELECT DISTINCT refered_by FROM app_db_p.sign_up_parquet
+
+SELECT DISTINCT how_did_u_hear_abt_us FROM app_db_p.sign_up_parquet
+
+SELECT DISTINCT which_person FROM app_db_p.sign_up_parquet
+
+SELECT next_followup_date FROM app_db_p.sign_up_parquet HAVING next_followup_date IS NOT NULL
+
+SELECT DISTINCT prefered_form_type FROM app_db_p.sign_up_parquet
+
+SELECT DISTINCT call_comments FROM app_db_p.sign_up_parquet
+
+
+-- Query for total number of forms
+
+SELECT SUM(num_forms) FROM app_db_p.sign_up_parquet
+
+SELECT SUM(number_of_published_forms) FROM app_db_p.sign_up_parquet
+
+-- Query for total number of forms number_of_published_forms
+
+SELECT * FROM app_db_p.sign_up_parquet
+
+---Sign up templates that converted more
+
+SELECT sign_up_template, COUNT(*) as use_sign_up_template_count
+FROM app_db_p.sign_up_parquet GROUP BY sign_up_template
+
+
+SELECT sign_up_template, template_name, COUNT(*) as sign_up_template_count, SUM(num_forms) as total_forms,
+SUM(number_of_published_forms) as total_published_forms
+FROM app_db_p.sign_up_parquet GROUP BY sign_up_template, template_name

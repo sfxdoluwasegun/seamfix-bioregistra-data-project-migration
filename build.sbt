@@ -28,6 +28,8 @@ lazy val root = (project in file(".")).
       "com.amazonaws" % "aws-java-sdk" % "1.7.4",
       "org.apache.spark" %% "spark-streaming" % "2.4.3" % "provided",
       "org.apache.spark" %% "spark-sql" % "2.4.3" % "provided",
+      "org.xerial.snappy" % "snappy-java" % "1.1.7.3" % "provided",
+      "org.postgresql" % "postgresql" % "42.2.5",
       
 
 
@@ -38,7 +40,8 @@ lazy val root = (project in file(".")).
     dependencyOverrides ++= Set(
       "com.fasterxml.jackson.core" % "jackson-databind" % "2.6.7.1",
       "com.fasterxml.jackson.core" % "jackson-core" % "2.6.7",
-      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.6.7"
+      "com.fasterxml.jackson.core" % "jackson-annotations" % "2.6.7",
+      "com.xerial.snappy" % "snappy-java" % "1.1.7.3"
     ),
 
       // uses compile classpath for the run task, including "provided" jar (cf http://stackoverflow.com/a/21803413/3827)
